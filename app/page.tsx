@@ -5,194 +5,270 @@ export default function HomePage() {
     <main
       style={{
         minHeight: '100vh',
+        margin: 0,
         background:
-          'linear-gradient(180deg, #f8fbff 0%, #eef6ff 45%, #f9fbff 100%)',
-        padding: '28px',
+          'linear-gradient(180deg, #dbeafe 0%, #c7e0ff 45%, #eaf4ff 100%)',
         fontFamily: 'Pretendard, Arial, sans-serif',
-        display: 'flex',
-        alignItems: 'center',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <div
         style={{
-          maxWidth: '1200px',
-          width: '100%',
-          margin: '0 auto',
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '70px',
+            left: '70px',
+            width: '18px',
+            height: '18px',
+            backgroundColor: '#6366f1',
+            transform: 'rotate(45deg)',
+            borderRadius: '4px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '120px',
+            left: '190px',
+            width: '16px',
+            height: '16px',
+            backgroundColor: '#4ade80',
+            transform: 'rotate(25deg)',
+            borderRadius: '4px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '60px',
+            right: '190px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#ffffff',
+            transform: 'rotate(20deg)',
+            borderRadius: '2px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: '140px',
+            right: '120px',
+            width: '34px',
+            height: '34px',
+            backgroundColor: '#ffffff',
+            transform: 'rotate(35deg)',
+            borderRadius: '4px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '120px',
+            left: '-20px',
+            width: '120px',
+            height: '12px',
+            backgroundColor: '#4ade80',
+            borderRadius: '999px',
+            transform: 'rotate(-10deg)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '180px',
+            right: '10px',
+            width: '90px',
+            height: '10px',
+            backgroundColor: '#f472b6',
+            borderRadius: '999px',
+            transform: 'rotate(-18deg)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '90px',
+            right: '-10px',
+            width: '100px',
+            height: '30px',
+            backgroundColor: '#4ade80',
+            borderRadius: '24px 24px 0 24px',
+            transform: 'rotate(-18deg)',
+            opacity: 0.9,
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <section
           style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '32px',
-            padding: '40px 42px',
-            boxShadow: '0 18px 40px rgba(37, 99, 235, 0.10)',
-            border: '1px solid #e5eefc',
-            overflow: 'hidden',
+            width: '100%',
+            maxWidth: '1180px',
+            background: 'linear-gradient(180deg, #5b63e8 0%, #5560e6 100%)',
+            borderRadius: '28px',
+            padding: '46px 42px 28px',
+            boxShadow: '0 20px 50px rgba(59, 77, 180, 0.22)',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <div
             style={{
               position: 'absolute',
-              top: '-120px',
-              right: '-80px',
-              width: '320px',
-              height: '320px',
-              background:
-                'radial-gradient(circle, rgba(37,99,235,0.14) 0%, rgba(37,99,235,0.05) 40%, rgba(37,99,235,0) 70%)',
-              pointerEvents: 'none',
+              left: '-60px',
+              top: '140px',
+              width: '180px',
+              height: '180px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
             }}
           />
-
           <div
             style={{
               position: 'absolute',
-              bottom: '-120px',
-              left: '-80px',
-              width: '280px',
-              height: '280px',
-              background:
-                'radial-gradient(circle, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 40%, rgba(245,158,11,0) 70%)',
-              pointerEvents: 'none',
+              right: '-50px',
+              bottom: '90px',
+              width: '170px',
+              height: '170px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: '43%',
+              bottom: '70px',
+              width: '180px',
+              height: '180px',
+              borderRadius: '30px',
+              background: 'rgba(43,54,175,0.18)',
+              transform: 'rotate(22deg)',
             }}
           />
 
           <div
             style={{
               position: 'relative',
-              zIndex: 1,
+              zIndex: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: '620px',
             }}
           >
-            <div
-              style={{
-                display: 'inline-block',
-                backgroundColor: '#dbeafe',
-                color: '#1d4ed8',
-                padding: '8px 14px',
-                borderRadius: '999px',
-                fontWeight: 700,
-                fontSize: '15px',
-                marginBottom: '18px',
-              }}
-            >
-              우리 반 기록 관리 앱
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: '52px',
-                lineHeight: 1.18,
-                color: '#0f172a',
-                fontWeight: 800,
-                maxWidth: '760px',
-              }}
-            >
-              교실 기록을 쉽고 빠르게 관리하는
-              <br />
-              우리 반 전용 화면
-            </h1>
-
-            <p
-              style={{
-                margin: '18px 0 0 0',
-                fontSize: '21px',
-                color: '#475569',
-                lineHeight: 1.6,
-                maxWidth: '760px',
-              }}
-            >
-              학생 현황은 크게 보여주고, 교사 화면에서는 학생과 모둠을 편하게 관리할 수 있어요.
-            </p>
-
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                gap: '18px',
-                marginTop: '30px',
-                marginBottom: '28px',
-              }}
-            >
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
               <div
                 style={{
-                  backgroundColor: '#f8fbff',
-                  border: '1px solid #dbeafe',
-                  borderRadius: '24px',
-                  padding: '22px',
+                  fontSize: 'clamp(88px, 17vw, 250px)',
+                  lineHeight: 0.9,
+                  fontWeight: 900,
+                  letterSpacing: '-0.06em',
+                  color: '#f8f8fc',
+                  textTransform: 'uppercase',
+                  userSelect: 'none',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '34px',
-                    marginBottom: '10px',
-                  }}
-                >
-                  🖥️
-                </div>
-                <div
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                    marginBottom: '8px',
-                  }}
-                >
-                  학생 화면
-                </div>
-                <div
-                  style={{
-                    fontSize: '17px',
-                    color: '#475569',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  모둠과 학생의 현재 기록을 전자칠판처럼 크게 보여주는 화면입니다.
-                </div>
+                CLASS
               </div>
 
               <div
                 style={{
-                  backgroundColor: '#fffaf0',
-                  border: '1px solid #fde68a',
-                  borderRadius: '24px',
-                  padding: '22px',
+                  marginTop: '18px',
+                  fontSize: 'clamp(20px, 2.1vw, 34px)',
+                  fontWeight: 800,
+                  color: '#ffffff',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '34px',
-                    marginBottom: '10px',
-                  }}
-                >
-                  👩‍🏫
-                </div>
-                <div
-                  style={{
-                    fontSize: '24px',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                    marginBottom: '8px',
-                  }}
-                >
-                  교사 화면
-                </div>
-                <div
-                  style={{
-                    fontSize: '17px',
-                    color: '#475569',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  학생 추가, 모둠 관리, 기록 부여, 초기화까지 할 수 있는 관리 화면입니다.
-                </div>
+                우리 반을 가장 즐겁게 기록하는 방법
+              </div>
+
+              <div
+                style={{
+                  marginTop: '12px',
+                  fontSize: 'clamp(14px, 1.2vw, 18px)',
+                  color: 'rgba(255,255,255,0.88)',
+                  fontWeight: 600,
+                }}
+              >
+                학생 화면은 크게 보여주고, 교사 화면은 빠르게 관리할 수 있어요.
               </div>
             </div>
 
             <div
               style={{
+                flex: 1,
                 display: 'flex',
-                gap: '16px',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                gap: '18px',
+                paddingTop: '30px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  borderRadius: '50%',
+                  background: '#fb923c',
+                  boxShadow: 'inset 0 -10px 0 rgba(0,0,0,0.08)',
+                }}
+              />
+              <div
+                style={{
+                  width: '190px',
+                  height: '190px',
+                  borderRadius: '40px',
+                  background: '#f472b6',
+                  boxShadow: 'inset 0 -12px 0 rgba(0,0,0,0.08)',
+                }}
+              />
+              <div
+                style={{
+                  width: '160px',
+                  height: '160px',
+                  borderRadius: '50%',
+                  background: '#bfdbfe',
+                  boxShadow: 'inset 0 -10px 0 rgba(0,0,0,0.08)',
+                }}
+              />
+              <div
+                style={{
+                  width: '140px',
+                  height: '140px',
+                  borderRadius: '32px',
+                  background: '#fde68a',
+                  boxShadow: 'inset 0 -10px 0 rgba(0,0,0,0.08)',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                marginTop: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '14px',
                 flexWrap: 'wrap',
               }}
             >
@@ -202,19 +278,32 @@ export default function HomePage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '18px 28px',
-                  borderRadius: '18px',
-                  backgroundColor: '#2563eb',
+                  minWidth: '150px',
+                  padding: '14px 22px',
+                  borderRadius: '14px',
+                  backgroundColor: '#111827',
                   color: '#ffffff',
                   textDecoration: 'none',
                   fontWeight: 800,
-                  fontSize: '18px',
-                  boxShadow: '0 14px 28px rgba(37, 99, 235, 0.24)',
-                  minWidth: '220px',
+                  fontSize: '16px',
+                  boxShadow: '0 10px 18px rgba(0,0,0,0.15)',
                 }}
               >
-                학생 화면 열기
+                학생 화면
               </Link>
+
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: '240px',
+                  textAlign: 'center',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: 'clamp(16px, 1.3vw, 22px)',
+                }}
+              >
+                교실에서 바로 쓰는 우리 반 기록판
+              </div>
 
               <Link
                 href="/login"
@@ -222,121 +311,40 @@ export default function HomePage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '18px 28px',
-                  borderRadius: '18px',
-                  backgroundColor: '#16a34a',
-                  color: '#ffffff',
+                  minWidth: '150px',
+                  padding: '14px 22px',
+                  borderRadius: '14px',
+                  backgroundColor: '#ffffff',
+                  color: '#1f2937',
                   textDecoration: 'none',
                   fontWeight: 800,
-                  fontSize: '18px',
-                  boxShadow: '0 14px 28px rgba(22, 163, 74, 0.20)',
-                  minWidth: '220px',
+                  fontSize: '16px',
+                  boxShadow: '0 10px 18px rgba(0,0,0,0.08)',
                 }}
               >
                 교사 로그인
               </Link>
             </div>
-          </div>
-        </section>
 
-        <section
-          style={{
-            marginTop: '22px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '22px',
-              padding: '20px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e8eef7',
-            }}
-          >
             <div
               style={{
-                fontSize: '16px',
-                color: '#64748b',
-                fontWeight: 700,
-                marginBottom: '8px',
+                marginTop: '18px',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                gap: '10px',
               }}
             >
-              보기 쉬운 화면
-            </div>
-            <div
-              style={{
-                fontSize: '18px',
-                color: '#0f172a',
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}
-            >
-              전자칠판과 PC에서 멀리서도 잘 보이도록 크게 구성했습니다.
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '22px',
-              padding: '20px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e8eef7',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '16px',
-                color: '#64748b',
-                fontWeight: 700,
-                marginBottom: '8px',
-              }}
-            >
-              빠른 관리
-            </div>
-            <div
-              style={{
-                fontSize: '18px',
-                color: '#0f172a',
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}
-            >
-              학생 추가, 모둠 변경, 기록 부여, 초기화를 빠르게 처리할 수 있습니다.
-            </div>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '22px',
-              padding: '20px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e8eef7',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '16px',
-                color: '#64748b',
-                fontWeight: 700,
-                marginBottom: '8px',
-              }}
-            >
-              안전한 접근
-            </div>
-            <div
-              style={{
-                fontSize: '18px',
-                color: '#0f172a',
-                fontWeight: 700,
-                lineHeight: 1.5,
-              }}
-            >
-              학생은 보기만 가능하고, 교사만 로그인 후 수정할 수 있습니다.
+              {[1, 2, 3, 4].map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    height: '6px',
+                    borderRadius: '999px',
+                    backgroundColor:
+                      item === 1 ? '#ffffff' : 'rgba(255,255,255,0.28)',
+                  }}
+                />
+              ))}
             </div>
           </div>
         </section>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import CuteClassHero from '@/components/CuteClassHero'
 
 type Student = {
   id: string
@@ -74,169 +75,49 @@ export default function StudentPage() {
     return bTotal - aTotal
   })
 
-  const getGroupBadgeColor = (index: number) => {
-    const colors = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#7c3aed', '#0f766e']
-    return colors[index % colors.length]
-  }
-
   return (
     <main
       style={{
         minHeight: '100vh',
         background:
-          'linear-gradient(180deg, #f8fbff 0%, #eef6ff 45%, #f9fbff 100%)',
-        padding: '28px',
+          'linear-gradient(180deg, #dbeafe 0%, #c7e0ff 45%, #eaf4ff 100%)',
         fontFamily: 'Pretendard, Arial, sans-serif',
+        padding: '28px',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div
-        style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-        }}
-      >
-        <section
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '28px',
-            padding: '28px 32px',
-            boxShadow: '0 18px 40px rgba(37, 99, 235, 0.10)',
-            marginBottom: '24px',
-            border: '1px solid #e5eefc',
-          }}
-        >
-          <div
+      <div style={{ maxWidth: '1320px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <CuteClassHero
+          badge="학생 화면"
+          title="CLASS BOARD"
+          subtitle="우리 반 기록을 한눈에 확인해요"
+          rightStat1Label="학생 수"
+          rightStat1Value={students.length}
+          rightStat2Label="모둠 수"
+          rightStat2Value={groups.length}
+        />
+
+        <section style={{ marginBottom: '26px' }}>
+          <h2
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '16px',
-              flexWrap: 'wrap',
+              margin: '0 0 14px 0',
+              fontSize: '28px',
+              fontWeight: 900,
+              color: '#1e293b',
             }}
           >
-            <div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: '#dbeafe',
-                  color: '#1d4ed8',
-                  padding: '8px 14px',
-                  borderRadius: '999px',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  marginBottom: '14px',
-                }}
-              >
-                우리 반 현황판
-              </div>
-
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: '44px',
-                  lineHeight: 1.2,
-                  color: '#0f172a',
-                  fontWeight: 800,
-                }}
-              >
-                모둠과 학생 기록 보기
-              </h1>
-
-              <p
-                style={{
-                  margin: '12px 0 0 0',
-                  fontSize: '20px',
-                  color: '#475569',
-                  lineHeight: 1.5,
-                }}
-              >
-                모둠별 기록과 학생별 기록을 한눈에 확인할 수 있어요.
-              </p>
-            </div>
-
-            <div
-              style={{
-                minWidth: '240px',
-                backgroundColor: '#f8fbff',
-                border: '1px solid #dbeafe',
-                borderRadius: '22px',
-                padding: '18px 20px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '15px',
-                  color: '#64748b',
-                  marginBottom: '8px',
-                  fontWeight: 700,
-                }}
-              >
-                현재 인원
-              </div>
-              <div
-                style={{
-                  fontSize: '34px',
-                  fontWeight: 800,
-                  color: '#0f172a',
-                  marginBottom: '6px',
-                }}
-              >
-                {students.length}명
-              </div>
-              <div
-                style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                }}
-              >
-                모둠 {groups.length}개 운영 중
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section style={{ marginBottom: '32px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '16px',
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '32px',
-                color: '#0f172a',
-                fontWeight: 800,
-              }}
-            >
-              모둠 현황
-            </h2>
-
-            <div
-              style={{
-                fontSize: '17px',
-                color: '#64748b',
-                fontWeight: 600,
-              }}
-            >
-              모둠 카드가 먼저 크게 보이도록 구성했어요.
-            </div>
-          </div>
+            모둠 현황
+          </h2>
 
           {sortedGroups.length === 0 ? (
             <div
               style={{
                 backgroundColor: '#ffffff',
-                borderRadius: '22px',
-                padding: '28px',
-                border: '1px solid #e5e7eb',
+                borderRadius: '24px',
+                padding: '24px',
                 color: '#64748b',
-                fontSize: '18px',
+                fontWeight: 700,
               }}
             >
               등록된 모둠이 없습니다.
@@ -245,8 +126,8 @@ export default function StudentPage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '18px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: '16px',
               }}
             >
               {sortedGroups.map((group, index) => {
@@ -258,86 +139,83 @@ export default function StudentPage() {
                     style={{
                       backgroundColor: '#ffffff',
                       borderRadius: '24px',
-                      padding: '22px',
-                      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-                      border: '1px solid #e8eef7',
-                      position: 'relative',
-                      overflow: 'hidden',
+                      padding: '20px',
+                      boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
+                      border: '1px solid #e2e8f0',
                     }}
                   >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '8px',
-                        backgroundColor: getGroupBadgeColor(index),
-                      }}
-                    />
-
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'flex-start',
                         gap: '12px',
-                        marginBottom: '18px',
+                        marginBottom: '16px',
                       }}
                     >
                       <div>
                         <div
                           style={{
-                            fontSize: '28px',
-                            fontWeight: 800,
+                            fontSize: '26px',
+                            fontWeight: 900,
                             color: '#0f172a',
-                            marginBottom: '8px',
                           }}
                         >
                           {group.name}
                         </div>
                         <div
                           style={{
+                            marginTop: '8px',
                             display: 'inline-block',
-                            backgroundColor: '#f1f5f9',
-                            color: '#334155',
+                            backgroundColor: '#eef2ff',
+                            color: '#4338ca',
                             borderRadius: '999px',
                             padding: '6px 12px',
-                            fontWeight: 700,
-                            fontSize: '14px',
+                            fontWeight: 800,
+                            fontSize: '13px',
                           }}
                         >
-                          순위 {index + 1}
+                          {index + 1}위
                         </div>
                       </div>
 
                       <div
                         style={{
-                          minWidth: '82px',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '16px',
+                          padding: '10px 14px',
                           textAlign: 'center',
-                          backgroundColor: '#eff6ff',
-                          borderRadius: '18px',
-                          padding: '10px 12px',
+                          minWidth: '84px',
                         }}
                       >
                         <div
                           style={{
                             fontSize: '13px',
-                            color: '#64748b',
                             fontWeight: 700,
-                            marginBottom: '6px',
+                            color: '#64748b',
                           }}
                         >
                           종합
                         </div>
                         <div
                           style={{
+                            marginTop: '6px',
                             fontSize: '28px',
-                            fontWeight: 800,
+                            fontWeight: 900,
                             color: total >= 0 ? '#16a34a' : '#ef4444',
                           }}
                         >
                           {total >= 0 ? `+${total}` : total}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '2px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#64748b',
+                          }}
+                        >
+                          점
                         </div>
                       </div>
                     </div>
@@ -352,76 +230,64 @@ export default function StudentPage() {
                       <div
                         style={{
                           backgroundColor: '#f0fdf4',
-                          borderRadius: '18px',
-                          padding: '18px',
                           border: '1px solid #dcfce7',
+                          borderRadius: '18px',
+                          padding: '16px',
+                          textAlign: 'center',
                         }}
                       >
+                        <div style={{ fontSize: '18px' }}>⭐</div>
                         <div
                           style={{
-                            fontSize: '18px',
-                            marginBottom: '10px',
-                          }}
-                        >
-                          👍
-                        </div>
-                        <div
-                          style={{
+                            marginTop: '8px',
                             fontSize: '32px',
-                            fontWeight: 800,
+                            fontWeight: 900,
                             color: '#166534',
-                            lineHeight: 1,
                           }}
                         >
                           {group.reward_count}
                         </div>
                         <div
                           style={{
-                            marginTop: '8px',
-                            color: '#166534',
+                            marginTop: '4px',
+                            fontSize: '13px',
                             fontWeight: 700,
-                            fontSize: '15px',
+                            color: '#166534',
                           }}
                         >
-                          받은 횟수
+                          점
                         </div>
                       </div>
 
                       <div
                         style={{
                           backgroundColor: '#f8fafc',
-                          borderRadius: '18px',
-                          padding: '18px',
                           border: '1px solid #e2e8f0',
+                          borderRadius: '18px',
+                          padding: '16px',
+                          textAlign: 'center',
                         }}
                       >
+                        <div style={{ fontSize: '18px' }}>☁️</div>
                         <div
                           style={{
-                            fontSize: '18px',
-                            marginBottom: '10px',
-                          }}
-                        >
-                          ☁️
-                        </div>
-                        <div
-                          style={{
+                            marginTop: '8px',
                             fontSize: '32px',
-                            fontWeight: 800,
+                            fontWeight: 900,
                             color: '#475569',
-                            lineHeight: 1,
                           }}
                         >
                           {group.penalty_count}
                         </div>
                         <div
                           style={{
-                            marginTop: '8px',
-                            color: '#475569',
+                            marginTop: '4px',
+                            fontSize: '13px',
                             fontWeight: 700,
-                            fontSize: '15px',
+                            color: '#475569',
                           }}
                         >
-                          받은 횟수
+                          점
                         </div>
                       </div>
                     </div>
@@ -433,47 +299,25 @@ export default function StudentPage() {
         </section>
 
         <section>
-          <div
+          <h2
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '16px',
+              margin: '0 0 14px 0',
+              fontSize: '28px',
+              fontWeight: 900,
+              color: '#1e293b',
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '32px',
-                color: '#0f172a',
-                fontWeight: 800,
-              }}
-            >
-              학생 현황
-            </h2>
-
-            <div
-              style={{
-                fontSize: '17px',
-                color: '#64748b',
-                fontWeight: 600,
-              }}
-            >
-              받은 기록이 많은 순서대로 정렬됩니다.
-            </div>
-          </div>
+            학생 현황
+          </h2>
 
           {sortedStudents.length === 0 ? (
             <div
               style={{
                 backgroundColor: '#ffffff',
-                borderRadius: '22px',
-                padding: '28px',
-                border: '1px solid #e5e7eb',
+                borderRadius: '24px',
+                padding: '24px',
                 color: '#64748b',
-                fontSize: '18px',
+                fontWeight: 700,
               }}
             >
               등록된 학생이 없습니다.
@@ -481,11 +325,8 @@ export default function StudentPage() {
           ) : (
             <div
               style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '24px',
-                padding: '12px',
-                boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-                border: '1px solid #e8eef7',
+                display: 'grid',
+                gap: '14px',
               }}
             >
               {sortedStudents.map((student, index) => {
@@ -495,131 +336,163 @@ export default function StudentPage() {
                   <div
                     key={student.id}
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '90px 1.5fr 1fr 1fr 1fr',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '16px 18px',
-                      borderBottom:
-                        index === sortedStudents.length - 1
-                          ? 'none'
-                          : '1px solid #eef2f7',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '22px',
+                      padding: '18px 20px',
+                      boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
+                      border: '1px solid #e2e8f0',
                     }}
                   >
-                    <div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '76px 1.5fr 0.8fr 0.8fr 0.9fr',
+                        gap: '14px',
+                        alignItems: 'center',
+                      }}
+                    >
                       <div
                         style={{
                           width: '58px',
                           height: '58px',
                           borderRadius: '50%',
-                          backgroundColor: '#dbeafe',
-                          color: '#1d4ed8',
+                          backgroundColor: '#eef2ff',
+                          color: '#4338ca',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontWeight: 800,
+                          fontWeight: 900,
                           fontSize: '22px',
                         }}
                       >
                         {index + 1}
                       </div>
-                    </div>
 
-                    <div>
-                      <div
-                        style={{
-                          fontSize: '24px',
-                          fontWeight: 800,
-                          color: '#0f172a',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        {student.name}
+                      <div>
+                        <div
+                          style={{
+                            fontSize: '24px',
+                            fontWeight: 900,
+                            color: '#0f172a',
+                          }}
+                        >
+                          {student.name}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '8px',
+                            display: 'inline-block',
+                            backgroundColor: '#f1f5f9',
+                            color: '#334155',
+                            borderRadius: '999px',
+                            padding: '6px 12px',
+                            fontWeight: 800,
+                            fontSize: '13px',
+                          }}
+                        >
+                          {getGroupName(student.group_id)}
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          display: 'inline-block',
-                          backgroundColor: '#f1f5f9',
-                          color: '#334155',
-                          borderRadius: '999px',
-                          padding: '6px 12px',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                        }}
-                      >
-                        {getGroupName(student.group_id)}
-                      </div>
-                    </div>
 
-                    <div
-                      style={{
-                        backgroundColor: '#f0fdf4',
-                        borderRadius: '18px',
-                        padding: '14px 16px',
-                        textAlign: 'center',
-                      }}
-                    >
-                      <div style={{ fontSize: '16px', marginBottom: '8px' }}>👍</div>
                       <div
                         style={{
-                          fontSize: '28px',
-                          fontWeight: 800,
-                          color: '#166534',
-                          lineHeight: 1,
+                          backgroundColor: '#f0fdf4',
+                          borderRadius: '16px',
+                          padding: '14px',
+                          textAlign: 'center',
                         }}
                       >
-                        {student.reward_count}
+                        <div style={{ fontSize: '16px' }}>⭐</div>
+                        <div
+                          style={{
+                            marginTop: '6px',
+                            fontSize: '26px',
+                            fontWeight: 900,
+                            color: '#166534',
+                          }}
+                        >
+                          {student.reward_count}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '2px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#166534',
+                          }}
+                        >
+                          점
+                        </div>
                       </div>
-                    </div>
 
-                    <div
-                      style={{
-                        backgroundColor: '#f8fafc',
-                        borderRadius: '18px',
-                        padding: '14px 16px',
-                        textAlign: 'center',
-                      }}
-                    >
-                      <div style={{ fontSize: '16px', marginBottom: '8px' }}>☁️</div>
                       <div
                         style={{
-                          fontSize: '28px',
-                          fontWeight: 800,
-                          color: '#475569',
-                          lineHeight: 1,
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '16px',
+                          padding: '14px',
+                          textAlign: 'center',
                         }}
                       >
-                        {student.penalty_count}
+                        <div style={{ fontSize: '16px' }}>☁️</div>
+                        <div
+                          style={{
+                            marginTop: '6px',
+                            fontSize: '26px',
+                            fontWeight: 900,
+                            color: '#475569',
+                          }}
+                        >
+                          {student.penalty_count}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '2px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#475569',
+                          }}
+                        >
+                          점
+                        </div>
                       </div>
-                    </div>
 
-                    <div
-                      style={{
-                        backgroundColor: '#eff6ff',
-                        borderRadius: '18px',
-                        padding: '14px 16px',
-                        textAlign: 'center',
-                      }}
-                    >
                       <div
                         style={{
-                          fontSize: '14px',
-                          color: '#64748b',
-                          marginBottom: '8px',
-                          fontWeight: 700,
+                          backgroundColor: '#eef2ff',
+                          borderRadius: '16px',
+                          padding: '14px',
+                          textAlign: 'center',
                         }}
                       >
-                        종합
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '30px',
-                          fontWeight: 800,
-                          color: total >= 0 ? '#16a34a' : '#ef4444',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {total >= 0 ? `+${total}` : total}
+                        <div
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            color: '#6366f1',
+                          }}
+                        >
+                          종합
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '6px',
+                            fontSize: '28px',
+                            fontWeight: 900,
+                            color: total >= 0 ? '#16a34a' : '#ef4444',
+                          }}
+                        >
+                          {total >= 0 ? `+${total}` : total}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: '2px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#6366f1',
+                          }}
+                        >
+                          점
+                        </div>
                       </div>
                     </div>
                   </div>

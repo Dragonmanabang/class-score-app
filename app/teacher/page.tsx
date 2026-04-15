@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import CuteClassHero from '@/components/CuteClassHero'
 
 type Student = {
   id: string
@@ -114,77 +115,92 @@ export default function TeacherPage() {
 
   const getScoreDiff = (reward: number, penalty: number) => reward - penalty
 
-  const applyActionToStudent = async (
+  const getActionEmoji = (actionType: ActionType) => {
+    return actionType === 'reward' ? '⭐' : '☁️'
+  }
+
+  const getActionField = (actionType: ActionType) => {
+    return actionType === 'reward' ? 'reward_count' : 'penalty_count'
+  }
+
+  const updateStudentScore = async (
     student: Student,
-    actionType: ActionType
+    actionType: ActionType,
+    amount: number
   ) => {
     setLoadingStudentId(student.id)
 
-    const nextReward =
-      actionType === 'reward' ? student.reward_count + 1 : student.reward_count
-    const nextPenalty =
-      actionType === 'penalty' ? student.penalty_count + 1 : student.penalty_count
+    const field = getActionField(actionType)
+    const currentValue = actionType === 'reward' ? student.reward_count : student.penalty_count
+    const nextValue = Math.max(0, currentValue + amount)
+
+    const updatePayload =
+      actionType === 'reward'
+        ? { reward_count: nextValue }
+        : { penalty_count: nextValue }
 
     const { error: updateError } = await supabase
       .from('students')
-      .update({
-        reward_count: nextReward,
-        penalty_count: nextPenalty,
-      })
+      .update(updatePayload)
       .eq('id', student.id)
 
     if (updateError) {
-      console.error('학생 기록 업데이트 오류:', updateError)
-      alert(`학생 기록 업데이트 오류: ${updateError.message}`)
+      alert(`학생 점수 수정 오류: ${updateError.message}`)
       setLoadingStudentId(null)
       return
     }
 
-    const { error: logError } = await supabase
-      .from('score_logs')
-      .insert([
-        {
-          target_type: 'student',
-          target_id: student.id,
-          points: 1,
-          action_type: actionType,
-        },
-      ])
+    const actualDelta = nextValue - currentValue
 
-    if (logError) {
-      console.error('학생 로그 저장 오류:', logError)
-      alert(`학생 로그 저장 오류: ${logError.message}`)
+    if (actualDelta !== 0) {
+      const { error: logError } = await supabase
+        .from('score_logs')
+        .insert([
+          {
+            target_type: 'student',
+            target_id: student.id,
+            points: actualDelta,
+            action_type: actionType,
+          },
+        ])
+
+      if (logError) {
+        alert(`학생 로그 저장 오류: ${logError.message}`)
+      }
     }
 
     await fetchData()
     setLoadingStudentId(null)
   }
 
-  const applyActionToGroup = async (
+  const updateGroupScore = async (
     group: Group,
-    actionType: ActionType
+    actionType: ActionType,
+    amount: number
   ) => {
     setLoadingGroupId(group.id)
 
-    const nextGroupReward =
-      actionType === 'reward' ? group.reward_count + 1 : group.reward_count
-    const nextGroupPenalty =
-      actionType === 'penalty' ? group.penalty_count + 1 : group.penalty_count
+    const currentGroupValue =
+      actionType === 'reward' ? group.reward_count : group.penalty_count
+    const nextGroupValue = Math.max(0, currentGroupValue + amount)
+
+    const groupPayload =
+      actionType === 'reward'
+        ? { reward_count: nextGroupValue }
+        : { penalty_count: nextGroupValue }
 
     const { error: groupUpdateError } = await supabase
       .from('groups')
-      .update({
-        reward_count: nextGroupReward,
-        penalty_count: nextGroupPenalty,
-      })
+      .update(groupPayload)
       .eq('id', group.id)
 
     if (groupUpdateError) {
-      console.error('모둠 기록 업데이트 오류:', groupUpdateError)
-      alert(`모둠 기록 업데이트 오류: ${groupUpdateError.message}`)
+      alert(`모둠 점수 수정 오류: ${groupUpdateError.message}`)
       setLoadingGroupId(null)
       return
     }
+
+    const actualGroupDelta = nextGroupValue - currentGroupValue
 
     const { data: memberStudents, error: memberError } = await supabase
       .from('students')
@@ -192,55 +208,70 @@ export default function TeacherPage() {
       .eq('group_id', group.id)
 
     if (memberError) {
-      console.error('모둠 학생 불러오기 오류:', memberError)
       alert(`모둠 학생 불러오기 오류: ${memberError.message}`)
       setLoadingGroupId(null)
       return
     }
 
-    if (memberStudents && memberStudents.length > 0) {
+    const studentLogRows: {
+      target_type: 'student'
+      target_id: string
+      points: number
+      action_type: ActionType
+    }[] = []
+
+    if (memberStudents && memberStudents.length > 0 && actualGroupDelta !== 0) {
       for (const member of memberStudents) {
-        const updatedReward =
-          actionType === 'reward' ? member.reward_count + 1 : member.reward_count
-        const updatedPenalty =
-          actionType === 'penalty' ? member.penalty_count + 1 : member.penalty_count
+        const currentStudentValue =
+          actionType === 'reward' ? member.reward_count : member.penalty_count
+        const nextStudentValue = Math.max(0, currentStudentValue + actualGroupDelta)
+        const actualStudentDelta = nextStudentValue - currentStudentValue
+
+        const studentPayload =
+          actionType === 'reward'
+            ? { reward_count: nextStudentValue }
+            : { penalty_count: nextStudentValue }
 
         const { error: studentUpdateError } = await supabase
           .from('students')
-          .update({
-            reward_count: updatedReward,
-            penalty_count: updatedPenalty,
-          })
+          .update(studentPayload)
           .eq('id', member.id)
 
         if (studentUpdateError) {
-          console.error('모둠 소속 학생 기록 업데이트 오류:', studentUpdateError)
+          console.error('모둠 소속 학생 점수 수정 오류:', studentUpdateError)
+        } else if (actualStudentDelta !== 0) {
+          studentLogRows.push({
+            target_type: 'student',
+            target_id: member.id,
+            points: actualStudentDelta,
+            action_type: actionType,
+          })
         }
       }
     }
 
     const logsToInsert = [
-      {
-        target_type: 'group',
-        target_id: group.id,
-        points: 1,
-        action_type: actionType,
-      },
-      ...(memberStudents || []).map((member) => ({
-        target_type: 'student',
-        target_id: member.id,
-        points: 1,
-        action_type: actionType,
-      })),
+      ...(actualGroupDelta !== 0
+        ? [
+            {
+              target_type: 'group' as const,
+              target_id: group.id,
+              points: actualGroupDelta,
+              action_type: actionType,
+            },
+          ]
+        : []),
+      ...studentLogRows,
     ]
 
-    const { error: logError } = await supabase
-      .from('score_logs')
-      .insert(logsToInsert)
+    if (logsToInsert.length > 0) {
+      const { error: logError } = await supabase
+        .from('score_logs')
+        .insert(logsToInsert)
 
-    if (logError) {
-      console.error('모둠 로그 저장 오류:', logError)
-      alert(`모둠 로그 저장 오류: ${logError.message}`)
+      if (logError) {
+        alert(`모둠 로그 저장 오류: ${logError.message}`)
+      }
     }
 
     await fetchData()
@@ -262,7 +293,6 @@ export default function TeacherPage() {
       .eq('id', studentId)
 
     if (changeError) {
-      console.error('모둠 변경 오류:', changeError)
       alert(`모둠 변경 오류: ${changeError.message}`)
       setChangingGroupStudentId(null)
       return
@@ -275,17 +305,13 @@ export default function TeacherPage() {
     const uniqueGroupIds = [...new Set(affectedGroupIds)]
 
     for (const groupId of uniqueGroupIds) {
-      const { error: resetError } = await supabase
+      await supabase
         .from('groups')
         .update({
           reward_count: 0,
           penalty_count: 0,
         })
         .eq('id', groupId)
-
-      if (resetError) {
-        console.error('모둠 초기화 오류:', resetError)
-      }
     }
 
     await fetchData()
@@ -307,7 +333,6 @@ export default function TeacherPage() {
       .neq('id', '')
 
     if (error) {
-      console.error('학생 전체 초기화 오류:', error)
       alert(`학생 전체 초기화 오류: ${error.message}`)
     }
 
@@ -330,7 +355,6 @@ export default function TeacherPage() {
       .neq('id', '')
 
     if (error) {
-      console.error('모둠 전체 초기화 오류:', error)
       alert(`모둠 전체 초기화 오류: ${error.message}`)
     }
 
@@ -358,7 +382,6 @@ export default function TeacherPage() {
     ])
 
     if (error) {
-      console.error('학생 추가 오류:', error)
       alert(`학생 추가 오류: ${error.message}`)
       setAddingStudent(false)
       return
@@ -389,7 +412,6 @@ export default function TeacherPage() {
     ])
 
     if (error) {
-      console.error('모둠 추가 오류:', error)
       alert(`모둠 추가 오류: ${error.message}`)
       setAddingGroup(false)
       return
@@ -426,7 +448,6 @@ export default function TeacherPage() {
       .eq('id', studentId)
 
     if (error) {
-      console.error('학생 이름 수정 오류:', error)
       alert(`학생 이름 수정 오류: ${error.message}`)
       setSavingStudentNameId(null)
       return
@@ -464,7 +485,6 @@ export default function TeacherPage() {
       .eq('id', groupId)
 
     if (error) {
-      console.error('모둠 이름 수정 오류:', error)
       alert(`모둠 이름 수정 오류: ${error.message}`)
       setSavingGroupNameId(null)
       return
@@ -488,7 +508,6 @@ export default function TeacherPage() {
       .eq('id', studentId)
 
     if (error) {
-      console.error('학생 삭제 오류:', error)
       alert(`학생 삭제 오류: ${error.message}`)
       setDeletingStudentId(null)
       return
@@ -512,7 +531,6 @@ export default function TeacherPage() {
       .eq('group_id', groupId)
 
     if (studentUpdateError) {
-      console.error('모둠 삭제 전 학생 정리 오류:', studentUpdateError)
       alert(`모둠 삭제 전 학생 정리 오류: ${studentUpdateError.message}`)
       setDeletingGroupId(null)
       return
@@ -524,7 +542,6 @@ export default function TeacherPage() {
       .eq('id', groupId)
 
     if (groupDeleteError) {
-      console.error('모둠 삭제 오류:', groupDeleteError)
       alert(`모둠 삭제 오류: ${groupDeleteError.message}`)
       setDeletingGroupId(null)
       return
@@ -539,22 +556,22 @@ export default function TeacherPage() {
       <main
         style={{
           minHeight: '100vh',
+          background:
+            'linear-gradient(180deg, #dbeafe 0%, #c7e0ff 45%, #eaf4ff 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontFamily: 'Pretendard, Arial, sans-serif',
-          background: 'linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%)',
         }}
       >
         <div
           style={{
             backgroundColor: '#ffffff',
-            padding: '24px 28px',
-            borderRadius: '20px',
-            boxShadow: '0 14px 34px rgba(37, 99, 235, 0.10)',
-            fontSize: '18px',
-            fontWeight: 700,
+            padding: '24px 30px',
+            borderRadius: '22px',
+            fontWeight: 900,
             color: '#334155',
+            boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
           }}
         >
           로그인 상태 확인 중...
@@ -568,165 +585,48 @@ export default function TeacherPage() {
       style={{
         minHeight: '100vh',
         background:
-          'linear-gradient(180deg, #f8fbff 0%, #eef6ff 45%, #f9fbff 100%)',
-        padding: '28px',
+          'linear-gradient(180deg, #dbeafe 0%, #c7e0ff 45%, #eaf4ff 100%)',
         fontFamily: 'Pretendard, Arial, sans-serif',
+        padding: '28px',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <section
-          style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '28px',
-            padding: '28px 32px',
-            boxShadow: '0 18px 40px rgba(37, 99, 235, 0.10)',
-            marginBottom: '24px',
-            border: '1px solid #e5eefc',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '20px',
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: '#dbeafe',
-                  color: '#1d4ed8',
-                  padding: '8px 14px',
-                  borderRadius: '999px',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                  marginBottom: '14px',
-                }}
-              >
-                교사 전용 관리 화면
-              </div>
-
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: '42px',
-                  lineHeight: 1.2,
-                  color: '#0f172a',
-                  fontWeight: 800,
-                }}
-              >
-                교실 기록 관리
-              </h1>
-
-              <p
-                style={{
-                  margin: '12px 0 0 0',
-                  fontSize: '19px',
-                  color: '#475569',
-                  lineHeight: 1.5,
-                }}
-              >
-                학생과 모둠을 관리하고 👍 또는 ☁️ 기록을 빠르게 부여할 수 있어요.
-              </p>
-            </div>
-
-            <div
+      <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
+        <CuteClassHero
+          badge="교사 화면"
+          title="CLASS MANAGER"
+          subtitle="학생과 모둠을 쉽고 빠르게 관리해요"
+          rightStat1Label="학생 수"
+          rightStat1Value={students.length}
+          rightStat2Label="모둠 수"
+          rightStat2Value={groups.length}
+          action={
+            <button
+              onClick={handleLogout}
               style={{
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-                alignItems: 'stretch',
+                padding: '16px 20px',
+                border: 'none',
+                borderRadius: '18px',
+                backgroundColor: '#111827',
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: '15px',
+                cursor: 'pointer',
+                boxShadow: '0 10px 18px rgba(0,0,0,0.12)',
               }}
             >
-              <div
-                style={{
-                  backgroundColor: '#f8fbff',
-                  border: '1px solid #dbeafe',
-                  borderRadius: '20px',
-                  padding: '16px 18px',
-                  minWidth: '180px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    fontWeight: 700,
-                    marginBottom: '8px',
-                  }}
-                >
-                  현재 학생 수
-                </div>
-                <div
-                  style={{
-                    fontSize: '30px',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                  }}
-                >
-                  {students.length}명
-                </div>
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: '#fffaf0',
-                  border: '1px solid #fde68a',
-                  borderRadius: '20px',
-                  padding: '16px 18px',
-                  minWidth: '180px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '14px',
-                    color: '#78716c',
-                    fontWeight: 700,
-                    marginBottom: '8px',
-                  }}
-                >
-                  현재 모둠 수
-                </div>
-                <div
-                  style={{
-                    fontSize: '30px',
-                    fontWeight: 800,
-                    color: '#0f172a',
-                  }}
-                >
-                  {groups.length}개
-                </div>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                style={{
-                  padding: '16px 20px',
-                  border: 'none',
-                  borderRadius: '18px',
-                  backgroundColor: '#ef4444',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  boxShadow: '0 10px 20px rgba(239, 68, 68, 0.22)',
-                }}
-              >
-                로그아웃
-              </button>
-            </div>
-          </div>
-        </section>
+              로그아웃
+            </button>
+          }
+        />
 
         <section
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '18px',
-            marginBottom: '22px',
+            gap: '16px',
+            marginBottom: '20px',
           }}
         >
           <div
@@ -734,16 +634,15 @@ export default function TeacherPage() {
               backgroundColor: '#ffffff',
               borderRadius: '24px',
               padding: '22px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e8eef7',
+              boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
             }}
           >
             <h2
               style={{
                 margin: '0 0 14px 0',
                 fontSize: '24px',
+                fontWeight: 900,
                 color: '#0f172a',
-                fontWeight: 800,
               }}
             >
               학생 추가
@@ -759,7 +658,6 @@ export default function TeacherPage() {
                   borderRadius: '14px',
                   border: '1px solid #cbd5e1',
                   fontSize: '16px',
-                  outline: 'none',
                 }}
               />
 
@@ -771,7 +669,7 @@ export default function TeacherPage() {
                   borderRadius: '14px',
                   border: '1px solid #cbd5e1',
                   fontSize: '16px',
-                  outline: 'none',
+                  backgroundColor: '#fff',
                 }}
               >
                 <option value="">미배정</option>
@@ -791,12 +689,11 @@ export default function TeacherPage() {
                   borderRadius: '14px',
                   backgroundColor: addingStudent ? '#cbd5e1' : '#2563eb',
                   color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '15px',
+                  fontWeight: 900,
                   cursor: addingStudent ? 'not-allowed' : 'pointer',
                 }}
               >
-                {addingStudent ? '추가 중...' : '학생 추가'}
+                학생 추가
               </button>
             </div>
           </div>
@@ -806,16 +703,15 @@ export default function TeacherPage() {
               backgroundColor: '#ffffff',
               borderRadius: '24px',
               padding: '22px',
-              boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #e8eef7',
+              boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
             }}
           >
             <h2
               style={{
                 margin: '0 0 14px 0',
                 fontSize: '24px',
+                fontWeight: 900,
                 color: '#0f172a',
-                fontWeight: 800,
               }}
             >
               모둠 추가
@@ -831,7 +727,6 @@ export default function TeacherPage() {
                   borderRadius: '14px',
                   border: '1px solid #cbd5e1',
                   fontSize: '16px',
-                  outline: 'none',
                 }}
               />
 
@@ -842,14 +737,13 @@ export default function TeacherPage() {
                   padding: '14px 18px',
                   border: 'none',
                   borderRadius: '14px',
-                  backgroundColor: addingGroup ? '#d6d3d1' : '#f59e0b',
+                  backgroundColor: addingGroup ? '#cbd5e1' : '#7c3aed',
                   color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '15px',
+                  fontWeight: 900,
                   cursor: addingGroup ? 'not-allowed' : 'pointer',
                 }}
               >
-                {addingGroup ? '추가 중...' : '모둠 추가'}
+                모둠 추가
               </button>
             </div>
           </div>
@@ -860,7 +754,7 @@ export default function TeacherPage() {
             display: 'flex',
             gap: '12px',
             flexWrap: 'wrap',
-            marginBottom: '28px',
+            marginBottom: '26px',
           }}
         >
           <button
@@ -872,12 +766,11 @@ export default function TeacherPage() {
               borderRadius: '16px',
               backgroundColor: resettingStudents ? '#cbd5e1' : '#2563eb',
               color: '#fff',
-              fontWeight: 800,
-              fontSize: '15px',
+              fontWeight: 900,
               cursor: resettingStudents ? 'not-allowed' : 'pointer',
             }}
           >
-            {resettingStudents ? '학생 기록 초기화 중...' : '학생 기록 전체 초기화'}
+            학생 기록 전체 초기화
           </button>
 
           <button
@@ -887,58 +780,36 @@ export default function TeacherPage() {
               padding: '14px 18px',
               border: 'none',
               borderRadius: '16px',
-              backgroundColor: resettingGroups ? '#d6d3d1' : '#f59e0b',
+              backgroundColor: resettingGroups ? '#cbd5e1' : '#7c3aed',
               color: '#fff',
-              fontWeight: 800,
-              fontSize: '15px',
+              fontWeight: 900,
               cursor: resettingGroups ? 'not-allowed' : 'pointer',
             }}
           >
-            {resettingGroups ? '모둠 기록 초기화 중...' : '모둠 기록 전체 초기화'}
+            모둠 기록 전체 초기화
           </button>
         </section>
 
-        <section style={{ marginBottom: '34px' }}>
-          <div
+        <section style={{ marginBottom: '28px' }}>
+          <h2
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '16px',
+              margin: '0 0 14px 0',
+              fontSize: '28px',
+              fontWeight: 900,
+              color: '#1e293b',
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '32px',
-                color: '#0f172a',
-                fontWeight: 800,
-              }}
-            >
-              모둠 관리
-            </h2>
-            <div
-              style={{
-                color: '#64748b',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              모둠 전체 현황과 빠른 관리 기능
-            </div>
-          </div>
+            모둠 관리
+          </h2>
 
           {groups.length === 0 ? (
             <div
               style={{
                 backgroundColor: '#ffffff',
-                borderRadius: '22px',
+                borderRadius: '24px',
                 padding: '24px',
-                border: '1px solid #e5e7eb',
                 color: '#64748b',
-                fontSize: '18px',
+                fontWeight: 700,
               }}
             >
               등록된 모둠이 없습니다.
@@ -947,7 +818,7 @@ export default function TeacherPage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
                 gap: '16px',
               }}
             >
@@ -961,8 +832,7 @@ export default function TeacherPage() {
                       backgroundColor: '#ffffff',
                       borderRadius: '24px',
                       padding: '20px',
-                      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-                      border: '1px solid #e8eef7',
+                      boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
                     }}
                   >
                     {editingGroupId === group.id ? (
@@ -988,11 +858,7 @@ export default function TeacherPage() {
                               backgroundColor:
                                 savingGroupNameId === group.id ? '#cbd5e1' : '#2563eb',
                               color: '#fff',
-                              fontWeight: 800,
-                              cursor:
-                                savingGroupNameId === group.id
-                                  ? 'not-allowed'
-                                  : 'pointer',
+                              fontWeight: 900,
                             }}
                           >
                             저장
@@ -1005,8 +871,7 @@ export default function TeacherPage() {
                               borderRadius: '12px',
                               backgroundColor: '#94a3b8',
                               color: '#fff',
-                              fontWeight: 800,
-                              cursor: 'pointer',
+                              fontWeight: 900,
                             }}
                           >
                             취소
@@ -1021,32 +886,32 @@ export default function TeacherPage() {
                             justifyContent: 'space-between',
                             alignItems: 'flex-start',
                             gap: '12px',
-                            marginBottom: '16px',
+                            marginBottom: '14px',
                           }}
                         >
                           <div>
                             <div
                               style={{
-                                fontSize: '28px',
-                                fontWeight: 800,
+                                fontSize: '26px',
+                                fontWeight: 900,
                                 color: '#0f172a',
-                                marginBottom: '8px',
                               }}
                             >
                               {group.name}
                             </div>
                             <div
                               style={{
+                                marginTop: '8px',
                                 display: 'inline-block',
-                                backgroundColor: '#eff6ff',
-                                color: '#1d4ed8',
+                                backgroundColor: '#eef2ff',
+                                color: '#4338ca',
                                 borderRadius: '999px',
                                 padding: '6px 12px',
                                 fontWeight: 800,
-                                fontSize: '14px',
+                                fontSize: '13px',
                               }}
                             >
-                              종합 {total >= 0 ? `+${total}` : total}
+                              종합 {total >= 0 ? `+${total}` : total}점
                             </div>
                           </div>
                         </div>
@@ -1055,122 +920,152 @@ export default function TeacherPage() {
                           style={{
                             display: 'grid',
                             gridTemplateColumns: '1fr 1fr',
-                            gap: '10px',
-                            marginBottom: '16px',
+                            gap: '12px',
+                            marginBottom: '14px',
                           }}
                         >
                           <div
                             style={{
                               backgroundColor: '#f0fdf4',
-                              borderRadius: '16px',
+                              borderRadius: '18px',
                               padding: '16px',
                               textAlign: 'center',
-                              border: '1px solid #dcfce7',
                             }}
                           >
-                            <div style={{ fontSize: '16px', marginBottom: '8px' }}>👍</div>
+                            <div>⭐</div>
                             <div
                               style={{
-                                fontSize: '30px',
-                                fontWeight: 800,
+                                marginTop: '8px',
+                                fontSize: '28px',
+                                fontWeight: 900,
                                 color: '#166534',
                               }}
                             >
                               {group.reward_count}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: '4px',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: '#166534',
+                              }}
+                            >
+                              점
                             </div>
                           </div>
 
                           <div
                             style={{
                               backgroundColor: '#f8fafc',
-                              borderRadius: '16px',
+                              borderRadius: '18px',
                               padding: '16px',
                               textAlign: 'center',
-                              border: '1px solid #e2e8f0',
                             }}
                           >
-                            <div style={{ fontSize: '16px', marginBottom: '8px' }}>☁️</div>
+                            <div>☁️</div>
                             <div
                               style={{
-                                fontSize: '30px',
-                                fontWeight: 800,
+                                marginTop: '8px',
+                                fontSize: '28px',
+                                fontWeight: 900,
                                 color: '#475569',
                               }}
                             >
                               {group.penalty_count}
                             </div>
+                            <div
+                              style={{
+                                marginTop: '4px',
+                                fontSize: '13px',
+                                fontWeight: 700,
+                                color: '#475569',
+                              }}
+                            >
+                              점
+                            </div>
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <button
-                            onClick={() => applyActionToGroup(group, 'reward')}
-                            disabled={loadingGroupId === group.id}
-                            style={{
-                              padding: '11px 14px',
-                              border: 'none',
-                              borderRadius: '12px',
-                              backgroundColor:
-                                loadingGroupId === group.id ? '#cbd5e1' : '#16a34a',
-                              color: '#fff',
-                              fontWeight: 800,
-                              cursor:
-                                loadingGroupId === group.id ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            👍 주기
-                          </button>
+                        <div style={{ display: 'grid', gap: '10px' }}>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => updateGroupScore(group, 'reward', 1)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#16a34a', loadingGroupId === group.id)}
+                            >
+                              ⭐ +1
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'reward', 5)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#15803d', loadingGroupId === group.id)}
+                            >
+                              ⭐ +5
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'reward', -1)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#22c55e', loadingGroupId === group.id)}
+                            >
+                              ⭐ -1
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'reward', -5)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#4ade80', loadingGroupId === group.id)}
+                            >
+                              ⭐ -5
+                            </button>
+                          </div>
 
-                          <button
-                            onClick={() => applyActionToGroup(group, 'penalty')}
-                            disabled={loadingGroupId === group.id}
-                            style={{
-                              padding: '11px 14px',
-                              border: 'none',
-                              borderRadius: '12px',
-                              backgroundColor:
-                                loadingGroupId === group.id ? '#cbd5e1' : '#64748b',
-                              color: '#fff',
-                              fontWeight: 800,
-                              cursor:
-                                loadingGroupId === group.id ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            ☁️ 주기
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => updateGroupScore(group, 'penalty', 1)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#64748b', loadingGroupId === group.id)}
+                            >
+                              ☁️ +1
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'penalty', 5)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#475569', loadingGroupId === group.id)}
+                            >
+                              ☁️ +5
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'penalty', -1)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#94a3b8', loadingGroupId === group.id)}
+                            >
+                              ☁️ -1
+                            </button>
+                            <button
+                              onClick={() => updateGroupScore(group, 'penalty', -5)}
+                              disabled={loadingGroupId === group.id}
+                              style={smallActionButton('#cbd5e1', loadingGroupId === group.id, '#334155')}
+                            >
+                              ☁️ -5
+                            </button>
+                          </div>
 
-                          <button
-                            onClick={() => startEditGroupName(group)}
-                            style={{
-                              padding: '11px 14px',
-                              border: 'none',
-                              borderRadius: '12px',
-                              backgroundColor: '#2563eb',
-                              color: '#fff',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            이름 수정
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => startEditGroupName(group)}
+                              style={smallActionButton('#2563eb', false)}
+                            >
+                              이름 수정
+                            </button>
 
-                          <button
-                            onClick={() => deleteGroup(group.id, group.name)}
-                            disabled={deletingGroupId === group.id}
-                            style={{
-                              padding: '11px 14px',
-                              border: 'none',
-                              borderRadius: '12px',
-                              backgroundColor:
-                                deletingGroupId === group.id ? '#cbd5e1' : '#ef4444',
-                              color: '#fff',
-                              fontWeight: 800,
-                              cursor:
-                                deletingGroupId === group.id ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            {deletingGroupId === group.id ? '삭제 중...' : '삭제'}
-                          </button>
+                            <button
+                              onClick={() => deleteGroup(group.id, group.name)}
+                              disabled={deletingGroupId === group.id}
+                              style={smallActionButton('#ef4444', deletingGroupId === group.id)}
+                            >
+                              {deletingGroupId === group.id ? '삭제 중...' : '삭제'}
+                            </button>
+                          </div>
                         </div>
                       </>
                     )}
@@ -1182,57 +1077,31 @@ export default function TeacherPage() {
         </section>
 
         <section>
-          <div
+          <h2
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px',
-              marginBottom: '16px',
+              margin: '0 0 14px 0',
+              fontSize: '28px',
+              fontWeight: 900,
+              color: '#1e293b',
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '32px',
-                color: '#0f172a',
-                fontWeight: 800,
-              }}
-            >
-              학생 관리
-            </h2>
-            <div
-              style={{
-                color: '#64748b',
-                fontSize: '16px',
-                fontWeight: 600,
-              }}
-            >
-              학생별 기록과 모둠 배정을 한 번에 관리
-            </div>
-          </div>
+            학생 관리
+          </h2>
 
           {students.length === 0 ? (
             <div
               style={{
                 backgroundColor: '#ffffff',
-                borderRadius: '22px',
+                borderRadius: '24px',
                 padding: '24px',
-                border: '1px solid #e5e7eb',
                 color: '#64748b',
-                fontSize: '18px',
+                fontWeight: 700,
               }}
             >
               등록된 학생이 없습니다.
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gap: '14px',
-              }}
-            >
+            <div style={{ display: 'grid', gap: '14px' }}>
               {students.map((student) => {
                 const total = getScoreDiff(student.reward_count, student.penalty_count)
 
@@ -1243,14 +1112,13 @@ export default function TeacherPage() {
                       backgroundColor: '#ffffff',
                       borderRadius: '22px',
                       padding: '18px 20px',
-                      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
-                      border: '1px solid #e8eef7',
+                      boxShadow: '0 14px 30px rgba(15, 23, 42, 0.08)',
                     }}
                   >
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '1.3fr 0.9fr 1.4fr',
+                        gridTemplateColumns: '1.3fr 0.9fr 1.3fr',
                         gap: '16px',
                         alignItems: 'center',
                       }}
@@ -1281,11 +1149,7 @@ export default function TeacherPage() {
                                       ? '#cbd5e1'
                                       : '#2563eb',
                                   color: '#fff',
-                                  fontWeight: 800,
-                                  cursor:
-                                    savingStudentNameId === student.id
-                                      ? 'not-allowed'
-                                      : 'pointer',
+                                  fontWeight: 900,
                                 }}
                               >
                                 저장
@@ -1298,8 +1162,7 @@ export default function TeacherPage() {
                                   borderRadius: '12px',
                                   backgroundColor: '#94a3b8',
                                   color: '#fff',
-                                  fontWeight: 800,
-                                  cursor: 'pointer',
+                                  fontWeight: 900,
                                 }}
                               >
                                 취소
@@ -1310,10 +1173,9 @@ export default function TeacherPage() {
                           <>
                             <div
                               style={{
-                                fontSize: '26px',
-                                fontWeight: 800,
+                                fontSize: '24px',
+                                fontWeight: 900,
                                 color: '#0f172a',
-                                marginBottom: '8px',
                               }}
                             >
                               {student.name}
@@ -1321,10 +1183,10 @@ export default function TeacherPage() {
 
                             <div
                               style={{
+                                marginTop: '8px',
                                 display: 'flex',
                                 gap: '8px',
                                 flexWrap: 'wrap',
-                                marginBottom: '10px',
                               }}
                             >
                               <span
@@ -1335,7 +1197,7 @@ export default function TeacherPage() {
                                   borderRadius: '999px',
                                   padding: '6px 12px',
                                   fontWeight: 800,
-                                  fontSize: '14px',
+                                  fontSize: '13px',
                                 }}
                               >
                                 {getGroupName(student.group_id)}
@@ -1344,20 +1206,21 @@ export default function TeacherPage() {
                               <span
                                 style={{
                                   display: 'inline-block',
-                                  backgroundColor: '#eff6ff',
+                                  backgroundColor: '#eef2ff',
                                   color: total >= 0 ? '#16a34a' : '#ef4444',
                                   borderRadius: '999px',
                                   padding: '6px 12px',
                                   fontWeight: 800,
-                                  fontSize: '14px',
+                                  fontSize: '13px',
                                 }}
                               >
-                                종합 {total >= 0 ? `+${total}` : total}
+                                종합 {total >= 0 ? `+${total}` : total}점
                               </span>
                             </div>
 
                             <div
                               style={{
+                                marginTop: '12px',
                                 display: 'flex',
                                 gap: '10px',
                                 flexWrap: 'wrap',
@@ -1366,44 +1229,64 @@ export default function TeacherPage() {
                               <div
                                 style={{
                                   backgroundColor: '#f0fdf4',
-                                  border: '1px solid #dcfce7',
                                   borderRadius: '14px',
                                   padding: '10px 14px',
-                                  minWidth: '90px',
+                                  minWidth: '88px',
                                   textAlign: 'center',
                                 }}
                               >
-                                <div style={{ fontSize: '15px', marginBottom: '4px' }}>👍</div>
+                                <div>⭐</div>
                                 <div
                                   style={{
-                                    fontSize: '24px',
-                                    fontWeight: 800,
+                                    marginTop: '4px',
+                                    fontSize: '22px',
+                                    fontWeight: 900,
                                     color: '#166534',
                                   }}
                                 >
                                   {student.reward_count}
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: '2px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    color: '#166534',
+                                  }}
+                                >
+                                  점
                                 </div>
                               </div>
 
                               <div
                                 style={{
                                   backgroundColor: '#f8fafc',
-                                  border: '1px solid #e2e8f0',
                                   borderRadius: '14px',
                                   padding: '10px 14px',
-                                  minWidth: '90px',
+                                  minWidth: '88px',
                                   textAlign: 'center',
                                 }}
                               >
-                                <div style={{ fontSize: '15px', marginBottom: '4px' }}>☁️</div>
+                                <div>☁️</div>
                                 <div
                                   style={{
-                                    fontSize: '24px',
-                                    fontWeight: 800,
+                                    marginTop: '4px',
+                                    fontSize: '22px',
+                                    fontWeight: 900,
                                     color: '#475569',
                                   }}
                                 >
                                   {student.penalty_count}
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: '2px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    color: '#475569',
+                                  }}
+                                >
+                                  점
                                 </div>
                               </div>
                             </div>
@@ -1414,7 +1297,7 @@ export default function TeacherPage() {
                       <div>
                         <div
                           style={{
-                            fontWeight: 800,
+                            fontWeight: 900,
                             marginBottom: '8px',
                             color: '#334155',
                             fontSize: '15px',
@@ -1438,7 +1321,6 @@ export default function TeacherPage() {
                             borderRadius: '14px',
                             border: '1px solid #cbd5e1',
                             fontSize: '15px',
-                            outline: 'none',
                             backgroundColor: '#fff',
                           }}
                         >
@@ -1449,100 +1331,87 @@ export default function TeacherPage() {
                             </option>
                           ))}
                         </select>
-                        <div
-                          style={{
-                            marginTop: '8px',
-                            fontSize: '13px',
-                            color: '#64748b',
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          모둠 변경 시 관련 모둠 기록은 0으로 초기화됩니다.
-                        </div>
                       </div>
 
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '8px',
-                          flexWrap: 'wrap',
-                          justifyContent: 'flex-start',
-                        }}
-                      >
-                        <button
-                          onClick={() => applyActionToStudent(student, 'reward')}
-                          disabled={loadingStudentId === student.id}
-                          style={{
-                            padding: '11px 14px',
-                            border: 'none',
-                            borderRadius: '12px',
-                            backgroundColor:
-                              loadingStudentId === student.id ? '#cbd5e1' : '#16a34a',
-                            color: '#fff',
-                            fontWeight: 800,
-                            cursor:
-                              loadingStudentId === student.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                          }}
-                        >
-                          👍 주기
-                        </button>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => updateStudentScore(student, 'reward', 1)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#16a34a', loadingStudentId === student.id)}
+                          >
+                            ⭐ +1
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'reward', 5)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#15803d', loadingStudentId === student.id)}
+                          >
+                            ⭐ +5
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'reward', -1)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#22c55e', loadingStudentId === student.id)}
+                          >
+                            ⭐ -1
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'reward', -5)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#4ade80', loadingStudentId === student.id)}
+                          >
+                            ⭐ -5
+                          </button>
+                        </div>
 
-                        <button
-                          onClick={() => applyActionToStudent(student, 'penalty')}
-                          disabled={loadingStudentId === student.id}
-                          style={{
-                            padding: '11px 14px',
-                            border: 'none',
-                            borderRadius: '12px',
-                            backgroundColor:
-                              loadingStudentId === student.id ? '#cbd5e1' : '#64748b',
-                            color: '#fff',
-                            fontWeight: 800,
-                            cursor:
-                              loadingStudentId === student.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                          }}
-                        >
-                          ☁️ 주기
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => updateStudentScore(student, 'penalty', 1)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#64748b', loadingStudentId === student.id)}
+                          >
+                            ☁️ +1
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'penalty', 5)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#475569', loadingStudentId === student.id)}
+                          >
+                            ☁️ +5
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'penalty', -1)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#94a3b8', loadingStudentId === student.id)}
+                          >
+                            ☁️ -1
+                          </button>
+                          <button
+                            onClick={() => updateStudentScore(student, 'penalty', -5)}
+                            disabled={loadingStudentId === student.id}
+                            style={smallActionButton('#cbd5e1', loadingStudentId === student.id, '#334155')}
+                          >
+                            ☁️ -5
+                          </button>
+                        </div>
 
-                        <button
-                          onClick={() => startEditStudentName(student)}
-                          style={{
-                            padding: '11px 14px',
-                            border: 'none',
-                            borderRadius: '12px',
-                            backgroundColor: '#2563eb',
-                            color: '#fff',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          이름 수정
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => startEditStudentName(student)}
+                            style={smallActionButton('#2563eb', false)}
+                          >
+                            이름 수정
+                          </button>
 
-                        <button
-                          onClick={() => deleteStudent(student.id, student.name)}
-                          disabled={deletingStudentId === student.id}
-                          style={{
-                            padding: '11px 14px',
-                            border: 'none',
-                            borderRadius: '12px',
-                            backgroundColor:
-                              deletingStudentId === student.id ? '#cbd5e1' : '#ef4444',
-                            color: '#fff',
-                            fontWeight: 800,
-                            cursor:
-                              deletingStudentId === student.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                          }}
-                        >
-                          {deletingStudentId === student.id ? '삭제 중...' : '삭제'}
-                        </button>
+                          <button
+                            onClick={() => deleteStudent(student.id, student.name)}
+                            disabled={deletingStudentId === student.id}
+                            style={smallActionButton('#ef4444', deletingStudentId === student.id)}
+                          >
+                            {deletingStudentId === student.id ? '삭제 중...' : '삭제'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1554,4 +1423,20 @@ export default function TeacherPage() {
       </div>
     </main>
   )
+}
+
+function smallActionButton(
+  backgroundColor: string,
+  disabled: boolean,
+  color = '#ffffff'
+) {
+  return {
+    padding: '11px 14px',
+    border: 'none',
+    borderRadius: '12px',
+    backgroundColor: disabled ? '#cbd5e1' : backgroundColor,
+    color,
+    fontWeight: 900 as const,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+  }
 }
