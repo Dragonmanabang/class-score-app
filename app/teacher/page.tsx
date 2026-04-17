@@ -55,6 +55,11 @@ export default function TeacherPage() {
   const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null)
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null)
 
+  const [editingScoreStudentId, setEditingScoreStudentId] = useState<string | null>(null)
+  const [editingRewardValue, setEditingRewardValue] = useState('')
+  const [editingPenaltyValue, setEditingPenaltyValue] = useState('')
+  const [savingScoreStudentId, setSavingScoreStudentId] = useState<string | null>(null)
+
   const checkUser = async () => {
     const {
       data: { session },
@@ -115,14 +120,6 @@ export default function TeacherPage() {
 
   const getScoreDiff = (reward: number, penalty: number) => reward - penalty
 
-  const getActionEmoji = (actionType: ActionType) => {
-    return actionType === 'reward' ? '⭐' : '☁️'
-  }
-
-  const getActionField = (actionType: ActionType) => {
-    return actionType === 'reward' ? 'reward_count' : 'penalty_count'
-  }
-
   const updateStudentScore = async (
     student: Student,
     actionType: ActionType,
@@ -130,8 +127,8 @@ export default function TeacherPage() {
   ) => {
     setLoadingStudentId(student.id)
 
-    const field = getActionField(actionType)
-    const currentValue = actionType === 'reward' ? student.reward_count : student.penalty_count
+    const currentValue =
+      actionType === 'reward' ? student.reward_count : student.penalty_count
     const nextValue = Math.max(0, currentValue + amount)
 
     const updatePayload =
@@ -278,6 +275,93 @@ export default function TeacherPage() {
     setLoadingGroupId(null)
   }
 
+  const startEditStudentScore = (student: Student) => {
+    setEditingScoreStudentId(student.id)
+    setEditingRewardValue(String(student.reward_count))
+    setEditingPenaltyValue(String(student.penalty_count))
+  }
+
+  const cancelEditStudentScore = () => {
+    setEditingScoreStudentId(null)
+    setEditingRewardValue('')
+    setEditingPenaltyValue('')
+  }
+
+  const saveStudentScore = async (student: Student) => {
+    const rewardValue = Number(editingRewardValue)
+    const penaltyValue = Number(editingPenaltyValue)
+
+    if (
+      Number.isNaN(rewardValue) ||
+      Number.isNaN(penaltyValue) ||
+      rewardValue < 0 ||
+      penaltyValue < 0
+    ) {
+      alert('0 이상의 숫자만 입력하세요.')
+      return
+    }
+
+    setSavingScoreStudentId(student.id)
+
+    const { error: updateError } = await supabase
+      .from('students')
+      .update({
+        reward_count: rewardValue,
+        penalty_count: penaltyValue,
+      })
+      .eq('id', student.id)
+
+    if (updateError) {
+      alert(`학생 점수 직접 수정 오류: ${updateError.message}`)
+      setSavingScoreStudentId(null)
+      return
+    }
+
+    const rewardDelta = rewardValue - student.reward_count
+    const penaltyDelta = penaltyValue - student.penalty_count
+
+    const logsToInsert: {
+      target_type: 'student'
+      target_id: string
+      points: number
+      action_type: ActionType
+    }[] = []
+
+    if (rewardDelta !== 0) {
+      logsToInsert.push({
+        target_type: 'student',
+        target_id: student.id,
+        points: rewardDelta,
+        action_type: 'reward',
+      })
+    }
+
+    if (penaltyDelta !== 0) {
+      logsToInsert.push({
+        target_type: 'student',
+        target_id: student.id,
+        points: penaltyDelta,
+        action_type: 'penalty',
+      })
+    }
+
+    if (logsToInsert.length > 0) {
+      const { error: logError } = await supabase
+        .from('score_logs')
+        .insert(logsToInsert)
+
+      if (logError) {
+        alert(`학생 점수 수정 로그 저장 오류: ${logError.message}`)
+      }
+    }
+
+    await fetchData()
+    setEditingScoreStudentId(null)
+    setEditingRewardValue('')
+    setEditingPenaltyValue('')
+    setSavingScoreStudentId(null)
+  }
+
   const changeStudentGroup = async (
     studentId: string,
     oldGroupId: string | null,
@@ -330,7 +414,7 @@ export default function TeacherPage() {
         reward_count: 0,
         penalty_count: 0,
       })
-      .neq('id', '')
+      .not('id', 'is', null)
 
     if (error) {
       alert(`학생 전체 초기화 오류: ${error.message}`)
@@ -352,7 +436,7 @@ export default function TeacherPage() {
         reward_count: 0,
         penalty_count: 0,
       })
-      .neq('id', '')
+      .not('id', 'is', null)
 
     if (error) {
       alert(`모둠 전체 초기화 오류: ${error.message}`)
@@ -823,7 +907,6 @@ export default function TeacherPage() {
               }}
             >
               {groups.map((group) => {
-                const total = getScoreDiff(group.reward_count, group.penalty_count)
 
                 return (
                   <div
@@ -899,20 +982,6 @@ export default function TeacherPage() {
                             >
                               {group.name}
                             </div>
-                            <div
-                              style={{
-                                marginTop: '8px',
-                                display: 'inline-block',
-                                backgroundColor: '#eef2ff',
-                                color: '#4338ca',
-                                borderRadius: '999px',
-                                padding: '6px 12px',
-                                fontWeight: 800,
-                                fontSize: '13px',
-                              }}
-                            >
-                              종합 {total >= 0 ? `+${total}` : total}점
-                            </div>
                           </div>
                         </div>
 
@@ -932,7 +1001,7 @@ export default function TeacherPage() {
                               textAlign: 'center',
                             }}
                           >
-                            <div>⭐</div>
+                            <div>☀️</div>
                             <div
                               style={{
                                 marginTop: '8px',
@@ -987,85 +1056,48 @@ export default function TeacherPage() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gap: '10px' }}>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button
-                              onClick={() => updateGroupScore(group, 'reward', 1)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#16a34a', loadingGroupId === group.id)}
-                            >
-                              ⭐ +1
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'reward', 5)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#15803d', loadingGroupId === group.id)}
-                            >
-                              ⭐ +5
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'reward', -1)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#22c55e', loadingGroupId === group.id)}
-                            >
-                              ⭐ -1
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'reward', -5)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#4ade80', loadingGroupId === group.id)}
-                            >
-                              ⭐ -5
-                            </button>
-                          </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                          <button
+                            onClick={() => updateGroupScore(group, 'reward', 5)}
+                            disabled={loadingGroupId === group.id}
+                            style={emojiButtonStyle('#15803d', loadingGroupId === group.id)}
+                            title="상점 5점"
+                          >
+                            ⭐
+                          </button>
+                          <button
+                            onClick={() => updateGroupScore(group, 'reward', 1)}
+                            disabled={loadingGroupId === group.id}
+                            style={emojiButtonStyle('#16a34a', loadingGroupId === group.id)}
+                            title="상점 1점"
+                          >
+                            ☀️
+                          </button>
+                          <button
+                            onClick={() => updateGroupScore(group, 'penalty', 1)}
+                            disabled={loadingGroupId === group.id}
+                            style={emojiButtonStyle('#64748b', loadingGroupId === group.id)}
+                            title="벌점 1점"
+                          >
+                            ☁️
+                          </button>
+                        </div>
 
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button
-                              onClick={() => updateGroupScore(group, 'penalty', 1)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#64748b', loadingGroupId === group.id)}
-                            >
-                              ☁️ +1
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'penalty', 5)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#475569', loadingGroupId === group.id)}
-                            >
-                              ☁️ +5
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'penalty', -1)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#94a3b8', loadingGroupId === group.id)}
-                            >
-                              ☁️ -1
-                            </button>
-                            <button
-                              onClick={() => updateGroupScore(group, 'penalty', -5)}
-                              disabled={loadingGroupId === group.id}
-                              style={smallActionButton('#cbd5e1', loadingGroupId === group.id, '#334155')}
-                            >
-                              ☁️ -5
-                            </button>
-                          </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => startEditGroupName(group)}
+                            style={smallActionButton('#2563eb', false)}
+                          >
+                            이름 수정
+                          </button>
 
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button
-                              onClick={() => startEditGroupName(group)}
-                              style={smallActionButton('#2563eb', false)}
-                            >
-                              이름 수정
-                            </button>
-
-                            <button
-                              onClick={() => deleteGroup(group.id, group.name)}
-                              disabled={deletingGroupId === group.id}
-                              style={smallActionButton('#ef4444', deletingGroupId === group.id)}
-                            >
-                              {deletingGroupId === group.id ? '삭제 중...' : '삭제'}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => deleteGroup(group.id, group.name)}
+                            disabled={deletingGroupId === group.id}
+                            style={smallActionButton('#ef4444', deletingGroupId === group.id)}
+                          >
+                            {deletingGroupId === group.id ? '삭제 중...' : '삭제'}
+                          </button>
                         </div>
                       </>
                     )}
@@ -1103,7 +1135,6 @@ export default function TeacherPage() {
           ) : (
             <div style={{ display: 'grid', gap: '14px' }}>
               {students.map((student) => {
-                const total = getScoreDiff(student.reward_count, student.penalty_count)
 
                 return (
                   <div
@@ -1169,17 +1200,120 @@ export default function TeacherPage() {
                               </button>
                             </div>
                           </div>
-                        ) : (
-                          <>
+                        ) : editingScoreStudentId === student.id ? (
+                          <div
+                            style={{
+                              display: 'grid',
+                              gap: '10px',
+                              backgroundColor: '#f8fbff',
+                              border: '1px solid #dbeafe',
+                              borderRadius: '18px',
+                              padding: '14px',
+                            }}
+                          >
                             <div
                               style={{
-                                fontSize: '24px',
+                                fontSize: '20px',
                                 fontWeight: 900,
                                 color: '#0f172a',
                               }}
                             >
                               {student.name}
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              <div>
+                                <div
+                                  style={{
+                                    marginBottom: '6px',
+                                    fontSize: '14px',
+                                    fontWeight: 800,
+                                    color: '#166534',
+                                  }}
+                                >
+                                  상점 총점
+                                </div>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editingRewardValue}
+                                  onChange={(e) => setEditingRewardValue(e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #cbd5e1',
+                                    fontSize: '15px',
+                                  }}
+                                />
+                              </div>
+
+                              <div>
+                                <div
+                                  style={{
+                                    marginBottom: '6px',
+                                    fontSize: '14px',
+                                    fontWeight: 800,
+                                    color: '#475569',
+                                  }}
+                                >
+                                  벌점 총점
+                                </div>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editingPenaltyValue}
+                                  onChange={(e) => setEditingPenaltyValue(e.target.value)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #cbd5e1',
+                                    fontSize: '15px',
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <button
+                                onClick={() => saveStudentScore(student)}
+                                disabled={savingScoreStudentId === student.id}
+                                style={smallActionButton('#2563eb', savingScoreStudentId === student.id)}
+                              >
+                                저장
+                              </button>
+                              <button
+                                onClick={cancelEditStudentScore}
+                                style={smallActionButton('#94a3b8', false)}
+                              >
+                                취소
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => startEditStudentScore(student)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: 0,
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                              }}
+                              title="학생 이름을 클릭하면 점수를 직접 수정할 수 있어요."
+                            >
+                              <div
+                                style={{
+                                  fontSize: '24px',
+                                  fontWeight: 900,
+                                  color: '#0f172a',
+                                }}
+                              >
+                                {student.name}
+                              </div>
+                            </button>
 
                             <div
                               style={{
@@ -1203,19 +1337,7 @@ export default function TeacherPage() {
                                 {getGroupName(student.group_id)}
                               </span>
 
-                              <span
-                                style={{
-                                  display: 'inline-block',
-                                  backgroundColor: '#eef2ff',
-                                  color: total >= 0 ? '#16a34a' : '#ef4444',
-                                  borderRadius: '999px',
-                                  padding: '6px 12px',
-                                  fontWeight: 800,
-                                  fontSize: '13px',
-                                }}
-                              >
-                                종합 {total >= 0 ? `+${total}` : total}점
-                              </span>
+                              
                             </div>
 
                             <div
@@ -1235,7 +1357,7 @@ export default function TeacherPage() {
                                   textAlign: 'center',
                                 }}
                               >
-                                <div>⭐</div>
+                                <div>☀️</div>
                                 <div
                                   style={{
                                     marginTop: '4px',
@@ -1336,63 +1458,30 @@ export default function TeacherPage() {
                       <div style={{ display: 'grid', gap: '10px' }}>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button
-                            onClick={() => updateStudentScore(student, 'reward', 1)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#16a34a', loadingStudentId === student.id)}
-                          >
-                            ⭐ +1
-                          </button>
-                          <button
                             onClick={() => updateStudentScore(student, 'reward', 5)}
                             disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#15803d', loadingStudentId === student.id)}
+                            style={emojiButtonStyle('#15803d', loadingStudentId === student.id)}
+                            title="상점 5점"
                           >
-                            ⭐ +5
+                            ⭐
                           </button>
-                          <button
-                            onClick={() => updateStudentScore(student, 'reward', -1)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#22c55e', loadingStudentId === student.id)}
-                          >
-                            ⭐ -1
-                          </button>
-                          <button
-                            onClick={() => updateStudentScore(student, 'reward', -5)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#4ade80', loadingStudentId === student.id)}
-                          >
-                            ⭐ -5
-                          </button>
-                        </div>
 
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => updateStudentScore(student, 'reward', 1)}
+                            disabled={loadingStudentId === student.id}
+                            style={emojiButtonStyle('#16a34a', loadingStudentId === student.id)}
+                            title="상점 1점"
+                          >
+                            ☀️
+                          </button>
+
                           <button
                             onClick={() => updateStudentScore(student, 'penalty', 1)}
                             disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#64748b', loadingStudentId === student.id)}
+                            style={emojiButtonStyle('#64748b', loadingStudentId === student.id)}
+                            title="벌점 1점"
                           >
-                            ☁️ +1
-                          </button>
-                          <button
-                            onClick={() => updateStudentScore(student, 'penalty', 5)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#475569', loadingStudentId === student.id)}
-                          >
-                            ☁️ +5
-                          </button>
-                          <button
-                            onClick={() => updateStudentScore(student, 'penalty', -1)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#94a3b8', loadingStudentId === student.id)}
-                          >
-                            ☁️ -1
-                          </button>
-                          <button
-                            onClick={() => updateStudentScore(student, 'penalty', -5)}
-                            disabled={loadingStudentId === student.id}
-                            style={smallActionButton('#cbd5e1', loadingStudentId === student.id, '#334155')}
-                          >
-                            ☁️ -5
+                            ☁️
                           </button>
                         </div>
 
@@ -1438,5 +1527,23 @@ function smallActionButton(
     color,
     fontWeight: 900 as const,
     cursor: disabled ? 'not-allowed' : 'pointer',
+  }
+}
+
+function emojiButtonStyle(backgroundColor: string, disabled: boolean) {
+  return {
+    width: '52px',
+    height: '52px',
+    border: 'none',
+    borderRadius: '16px',
+    backgroundColor: disabled ? '#cbd5e1' : backgroundColor,
+    color: '#ffffff',
+    fontSize: '24px',
+    fontWeight: 900 as const,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: disabled ? 'none' : '0 10px 20px rgba(0,0,0,0.10)',
   }
 }

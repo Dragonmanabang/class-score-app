@@ -179,116 +179,28 @@ export default function StudentPage() {
                         </div>
                       </div>
 
-                      <div
-                        style={{
-                          backgroundColor: '#f8fafc',
-                          borderRadius: '16px',
-                          padding: '10px 14px',
-                          textAlign: 'center',
-                          minWidth: '84px',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: '#64748b',
-                          }}
-                        >
-                          종합
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '28px',
-                            fontWeight: 900,
-                            color: total >= 0 ? '#16a34a' : '#ef4444',
-                          }}
-                        >
-                          {total >= 0 ? `+${total}` : total}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '2px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: '#64748b',
-                          }}
-                        >
-                          점
-                        </div>
-                      </div>
+
                     </div>
 
                     <div
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '12px',
+                        backgroundColor: '#f7faff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '18px',
+                        padding: '18px',
+                        textAlign: 'center',
                       }}
                     >
+                      <div style={{ fontSize: '18px' }}>☀️</div>
                       <div
                         style={{
-                          backgroundColor: '#f0fdf4',
-                          border: '1px solid #dcfce7',
-                          borderRadius: '18px',
-                          padding: '16px',
-                          textAlign: 'center',
+                          marginTop: '8px',
+                          fontSize: '32px',
+                          fontWeight: 900,
+                          color: total >= 0 ? '#166534' : '#ef4444',
                         }}
                       >
-                        <div style={{ fontSize: '18px' }}>⭐</div>
-                        <div
-                          style={{
-                            marginTop: '8px',
-                            fontSize: '32px',
-                            fontWeight: 900,
-                            color: '#166534',
-                          }}
-                        >
-                          {group.reward_count}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '4px',
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: '#166534',
-                          }}
-                        >
-                          점
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '18px',
-                          padding: '16px',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div style={{ fontSize: '18px' }}>☁️</div>
-                        <div
-                          style={{
-                            marginTop: '8px',
-                            fontSize: '32px',
-                            fontWeight: 900,
-                            color: '#475569',
-                          }}
-                        >
-                          {group.penalty_count}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '4px',
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            color: '#475569',
-                          }}
-                        >
-                          점
-                        </div>
+                        {total >= 0 ? `+${total}` : total}
                       </div>
                     </div>
                   </div>
@@ -346,7 +258,7 @@ export default function StudentPage() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '76px 1.5fr 0.8fr 0.8fr 0.9fr',
+                        gridTemplateColumns: '76px 1.8fr 1fr',                        
                         gap: '14px',
                         alignItems: 'center',
                       }}
@@ -396,82 +308,21 @@ export default function StudentPage() {
 
                       <div
                         style={{
-                          backgroundColor: '#f0fdf4',
+                          backgroundColor: '#f7faff',
                           borderRadius: '16px',
                           padding: '14px',
                           textAlign: 'center',
-                        }}
-                      >
-                        <div style={{ fontSize: '16px' }}>⭐</div>
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '26px',
-                            fontWeight: 900,
-                            color: '#166534',
-                          }}
-                        >
-                          {student.reward_count}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '2px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: '#166534',
-                          }}
-                        >
-                          점
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#f8fafc',
-                          borderRadius: '16px',
-                          padding: '14px',
-                          textAlign: 'center',
-                        }}
-                      >
-                        <div style={{ fontSize: '16px' }}>☁️</div>
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '26px',
-                            fontWeight: 900,
-                            color: '#475569',
-                          }}
-                        >
-                          {student.penalty_count}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '2px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: '#475569',
-                          }}
-                        >
-                          점
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          backgroundColor: '#eef2ff',
-                          borderRadius: '16px',
-                          padding: '14px',
-                          textAlign: 'center',
+                          border: '1px solid #e2e8f0',
                         }}
                       >
                         <div
                           style={{
-                            fontSize: '13px',
+                            fontSize: '18px',
                             fontWeight: 800,
                             color: '#6366f1',
                           }}
                         >
-                          종합
+                          ☀️
                         </div>
                         <div
                           style={{
@@ -482,16 +333,6 @@ export default function StudentPage() {
                           }}
                         >
                           {total >= 0 ? `+${total}` : total}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: '2px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: '#6366f1',
-                          }}
-                        >
-                          점
                         </div>
                       </div>
                     </div>
